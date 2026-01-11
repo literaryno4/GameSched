@@ -1,0 +1,17 @@
+# Build artifacts
+build/
+*.o
+*.bpf.o
+*.bpf.skel.h
+*.bpf.subskel.h
+
+# Kernel source link (local reference only)
+linux_official
+
+# Editor
+.vscode/
+*.swp
+*~
+
+# IDE
+.idea/
