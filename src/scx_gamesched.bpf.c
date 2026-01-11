@@ -188,7 +188,7 @@ s32 BPF_STRUCT_OPS(gamesched_select_cpu, struct task_struct *p,
 
 	/* Dispatch directly if idle */
 	if (is_idle)
-		scx_bpf_dispatch(p, SCX_DSQ_LOCAL, slice_ns, 0);
+		scx_bpf_dispatch(p, SCX_DSQ_LOCAL_ON | cpu, slice_ns, 0);
 
 	return cpu;
 }
