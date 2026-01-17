@@ -49,7 +49,6 @@ static const char help_fmt[] =
 "  status                      Show current configuration\n"
 "\n"
 "Options:\n"
-"  -i            Enable CPU isolation mode\n"
 "  -v            Verbose output\n"
 "  -h            Display this help\n";
 
@@ -358,7 +357,6 @@ int main(int argc, char **argv)
 {
 	struct scx_gamesched *skel;
 	int opt;
-	bool isolation_mode = false;
 	const char *cmd = NULL;
 	int cmd_argc = 0;
 	char **cmd_argv = NULL;
@@ -379,11 +377,8 @@ int main(int argc, char **argv)
 	}
 
 	/* Parse global options (before command) */
-	while ((opt = getopt(argc, argv, "ivh")) != -1) {
+	while ((opt = getopt(argc, argv, "vh")) != -1) {
 		switch (opt) {
-		case 'i':
-			isolation_mode = true;
-			break;
 		case 'v':
 			verbose = true;
 			break;
@@ -474,7 +469,6 @@ int main(int argc, char **argv)
 
 	/* No command - run the scheduler (load BPF, pin maps) */
 	skel = SCX_OPS_OPEN(gamesched_ops, scx_gamesched);
-	skel->rodata->isolation_enabled = isolation_mode;
 	SCX_OPS_LOAD(skel, gamesched_ops, scx_gamesched, uei);
 
 	run_scheduler(skel);

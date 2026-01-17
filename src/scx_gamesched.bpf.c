@@ -23,7 +23,6 @@ char _license[] SEC("license") = "GPL";
 /*
  * User-configurable parameters (set from userspace before load)
  */
-const volatile bool isolation_enabled;
 const volatile u64 slice_ns = SCX_SLICE_DFL;
 
 UEI_DEFINE(uei);
@@ -100,7 +99,7 @@ static bool is_cpu_isolated(s32 cpu)
 	u32 cpu_key = cpu;
 	u32 *isolated;
 
-	if (!isolation_enabled || cpu < 0)
+	if (cpu < 0)
 		return false;
 
 	isolated = bpf_map_lookup_elem(&isolated_cpus, &cpu_key);
@@ -169,8 +168,7 @@ s32 BPF_STRUCT_OPS(gamesched_select_cpu, struct task_struct *p,
 	cpu = scx_bpf_select_cpu_dfl(p, prev_cpu, wake_flags, &is_idle);
 
 	/* If selected CPU is isolated and task is not allowed, find another */
-	if (isolation_enabled && is_cpu_isolated(cpu) &&
-	    !task_allowed_on_isolated(p)) {
+	if (is_cpu_isolated(cpu) && !task_allowed_on_isolated(p)) {
 		s32 nr_cpus = scx_bpf_nr_cpu_ids();
 		s32 i;
 
