@@ -272,6 +272,9 @@ int main(int argc, char **argv)
 	struct scx_gamesched *skel;
 	int opt;
 	bool isolation_mode = false;
+	const char *cmd = NULL;
+	int cmd_argc = 0;
+	char **cmd_argv = NULL;
 
 	libbpf_set_print(libbpf_print_fn);
 	signal(SIGINT, sigint_handler);
@@ -279,7 +282,19 @@ int main(int argc, char **argv)
 
 	skel = SCX_OPS_OPEN(gamesched_ops, scx_gamesched);
 
-	/* Parse global options first */
+	/* Check if first non-option arg is a subcommand */
+	for (int i = 1; i < argc; i++) {
+		if (argv[i][0] != '-') {
+			/* Found a command */
+			cmd = argv[i];
+			cmd_argc = argc - i;
+			cmd_argv = &argv[i];
+			argc = i;  /* Limit getopt to args before command */
+			break;
+		}
+	}
+
+	/* Parse global options (before command) */
 	while ((opt = getopt(argc, argv, "ivh")) != -1) {
 		switch (opt) {
 		case 'i':
@@ -298,19 +313,17 @@ int main(int argc, char **argv)
 
 	SCX_OPS_LOAD(skel, gamesched_ops, scx_gamesched, uei);
 
-	/* Handle commands */
-	if (optind < argc) {
-		const char *cmd = argv[optind];
-
+	/* Handle subcommands */
+	if (cmd) {
 		if (strcmp(cmd, "add") == 0) {
 			int pid = 0;
 			const char *priority = NULL;
 
-			for (int i = optind + 1; i < argc; i++) {
-				if (strcmp(argv[i], "--pid") == 0 && i + 1 < argc)
-					pid = atoi(argv[++i]);
-				else if (strcmp(argv[i], "--priority") == 0 && i + 1 < argc)
-					priority = argv[++i];
+			for (int i = 1; i < cmd_argc; i++) {
+				if (strcmp(cmd_argv[i], "--pid") == 0 && i + 1 < cmd_argc)
+					pid = atoi(cmd_argv[++i]);
+				else if (strcmp(cmd_argv[i], "--priority") == 0 && i + 1 < cmd_argc)
+					priority = cmd_argv[++i];
 			}
 
 			if (pid <= 0 || !priority) {
@@ -323,9 +336,9 @@ int main(int argc, char **argv)
 		} else if (strcmp(cmd, "remove") == 0) {
 			int pid = 0;
 
-			for (int i = optind + 1; i < argc; i++) {
-				if (strcmp(argv[i], "--pid") == 0 && i + 1 < argc)
-					pid = atoi(argv[++i]);
+			for (int i = 1; i < cmd_argc; i++) {
+				if (strcmp(cmd_argv[i], "--pid") == 0 && i + 1 < cmd_argc)
+					pid = atoi(cmd_argv[++i]);
 			}
 
 			if (pid <= 0) {
@@ -338,10 +351,10 @@ int main(int argc, char **argv)
 		} else if (strcmp(cmd, "isolate") == 0) {
 			const char *cpu_list = NULL;
 
-			for (int i = optind + 1; i < argc; i++) {
-				if (strcmp(argv[i], "--cpus") == 0 && i + 1 < argc)
-					cpu_list = argv[++i];
-				else if (strcmp(argv[i], "--clear") == 0)
+			for (int i = 1; i < cmd_argc; i++) {
+				if (strcmp(cmd_argv[i], "--cpus") == 0 && i + 1 < cmd_argc)
+					cpu_list = cmd_argv[++i];
+				else if (strcmp(cmd_argv[i], "--clear") == 0)
 					cpu_list = "clear";
 			}
 
@@ -355,11 +368,11 @@ int main(int argc, char **argv)
 		} else if (strcmp(cmd, "pin") == 0) {
 			int pid = 0, cpu = -1;
 
-			for (int i = optind + 1; i < argc; i++) {
-				if (strcmp(argv[i], "--pid") == 0 && i + 1 < argc)
-					pid = atoi(argv[++i]);
-				else if (strcmp(argv[i], "--cpu") == 0 && i + 1 < argc)
-					cpu = atoi(argv[++i]);
+			for (int i = 1; i < cmd_argc; i++) {
+				if (strcmp(cmd_argv[i], "--pid") == 0 && i + 1 < cmd_argc)
+					pid = atoi(cmd_argv[++i]);
+				else if (strcmp(cmd_argv[i], "--cpu") == 0 && i + 1 < cmd_argc)
+					cpu = atoi(cmd_argv[++i]);
 			}
 
 			if (pid <= 0 || cpu < 0) {
@@ -386,3 +399,4 @@ int main(int argc, char **argv)
 	scx_gamesched__destroy(skel);
 	return 0;
 }
+
